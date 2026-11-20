@@ -704,8 +704,9 @@ main{padding:20px max(3vw,16px) 40px;max-width:1500px;margin:0 auto}
 .view{display:none}.view.on{display:block}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.kpi b{display:block;font:800 clamp(24px,3vw,34px)/1.1 Archivo,Inter,sans-serif;color:var(--forest);white-space:nowrap}
+.kpi b{display:block;font:800 clamp(22px,2.3vw,30px)/1.1 Archivo,Inter,sans-serif;color:var(--forest);white-space:nowrap}
 .kpi span{font-size:13px;color:var(--mute)}
+.kpi b.txt{font-size:clamp(15px,1.4vw,18px);line-height:1.25;white-space:normal;overflow-wrap:anywhere;margin:6px 0 4px}
 .kpi.hot{background:var(--ember);border-color:var(--ember);color:#fff}.kpi.hot b,.kpi.hot span{color:#fff}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
@@ -801,6 +802,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
     <a href="#map">Satellite map</a>
     <a href="#records">Fire occurrences</a>
     <a href="#reasons">Reasons</a>
+    <a href="#officers">Officers</a>
     <a href="#reports">Reports</a>
   </nav>
 </header>
@@ -875,6 +877,21 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
     <div class="card c6"><h3>Reasons by month</h3><div class="ch"><canvas id="cRM"></canvas></div></div>
     <div class="card c6"><h3>Reasons by year <small>share of incidents</small></h3><div class="ch"><canvas id="cRY"></canvas></div></div>
     <div class="card c12"><h3>Reason × Range <small>incidents (area burnt in Ha)</small></h3><div class="scroll"><table class="t" id="tRR"></table></div></div>
+  </div>
+</section>
+
+<!-- OFFICERS -->
+<section class="view" id="v-officers">
+  <p class="lede" id="oLede"></p>
+  <div class="kpis" id="oKpis"></div>
+  <div class="grid">
+    <div class="card c6"><h3>Efficiency score <small>top 15 officers, 0–100</small></h3><div class="ch tall"><canvas id="cOff"></canvas></div></div>
+    <div class="card c6"><h3>Speed vs. damage <small>each dot is an officer · lower-left is better</small></h3><div class="ch tall"><canvas id="cOffSc"></canvas></div></div>
+    <div class="card c12"><h3>Officer efficiency ranking <small id="oSub"></small></h3>
+      <div class="tools"><input type="search" id="oq" placeholder="Search officer, range, beat…"><label class="tog" style="font-size:13px">Minimum fires <select id="oMin" style="height:36px;border:1px solid var(--line);border-radius:8px"><option>1</option><option>3</option><option selected>5</option><option>10</option><option>20</option></select></label><button class="btn" id="bOx">Download Excel</button></div>
+      <div class="scroll"><table class="t" id="tOff"></table></div>
+      <p class="note">How the score works: <b>40%</b> same-day attendance (visit date equals fire date), <b>40%</b> small average area burnt per fire (fire contained early), <b>20%</b> number of fires handled. Each part is ranked against the other officers in the current filters, so 100 means best on every measure. Visit gaps below 0 or above 30 days are treated as data-entry errors and left out of response time.</p>
+    </div>
   </div>
 </section>
 
@@ -1036,8 +1053,8 @@ function renderDash(rows){
   const topR=rs.find(g=>g.k!='Others'&&g.k!='Not recorded')||rs[0];
   $('lede').innerHTML=rows.length?`<strong>${fmt(fire.length)} fires</strong> burnt <strong>${fa(area)} Ha</strong> across ${beats} beats (${esc(filterText())}). ${byM[0]?`<strong>${MONTHL[byM[0].k-1]}</strong> is the peak month with ${fmt(byM[0].n)} incidents`:''}${topR?`, and the most common identified cause is <strong>${esc(topR.k)}</strong> (${Math.round(topR.n/rows.length*100)}%).`:'.'}`:'No records match these filters.';
   const avg=fire.length?area/fire.length:0;
-  const K=[['Fire incidents reported',fmt(rows.length)],['Fires occurred',fmt(fire.length),1],['Not occurred / false alerts',fmt(rows.filter(r=>r.occ=='No').length)],['Area burnt (Ha)',fa(area)],['Avg area per fire (Ha)',fa(avg)],['Beats affected',fmt(beats)],['Ranges affected',fmt(new Set(fire.map(r=>r.rng)).size)],['Most affected beat',esc(top(fire,'beat'))]];
-  $('kpis').innerHTML=K.map(([l,v,h])=>`<div class="kpi${h?' hot':''}"><b style="${v.length>12?'font-size:20px':''}">${v}</b><span>${l}</span></div>`).join('');
+  const K=[['Fire incidents reported',fmt(rows.length)],['Fires occurred',fmt(fire.length),1],['Not occurred / false alerts',fmt(rows.filter(r=>r.occ=='No').length)],['Area burnt (Ha)',fa(area)],['Avg area per fire (Ha)',fa(avg)],['Beats affected',fmt(beats)],['Ranges affected',fmt(new Set(fire.map(r=>r.rng)).size)],['Most affected beat',esc(top(fire,'beat')),0,1],['Most efficient officer',(()=>{const o=officerStats(rows)[0];return o?esc(o.name):'–'})(),0,1]];
+  $('kpis').innerHTML=K.map(([l,v,h,tx])=>`<div class="kpi${h?' hot':''}"><b class="${tx?'txt':''}" title="${v}">${v}</b><span>${l}</span></div>`).join('');
   const years=uniq(rows,'y').sort();const ms=[1,2,3,4,5,6,7,8,9,10,11,12].filter(m=>rows.some(r=>r.m==m));
   chart('cMonth',{type:'bar',data:{labels:ms.map(m=>MONTHS[m-1]),datasets:years.map((y,i)=>({label:y,data:ms.map(m=>rows.filter(r=>r.y==y&&r.m==m).length),backgroundColor:YCOL[i%YCOL.length]}))},options:{plugins:{tooltip:{mode:'index'}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
   chart('cReason',{type:'doughnut',data:{labels:rs.map(g=>g.k),datasets:[{data:rs.map(g=>g.n),backgroundColor:rs.map(g=>rc(g.k)),borderWidth:2}]},options:{cutout:'58%',plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)} (${(c.raw/rows.length*100).toFixed(1)}%)`}}}}});
@@ -1162,6 +1179,36 @@ function renderReasons(rows){
   $('tRR').innerHTML=`<thead><tr><th>Range</th>${rs.map(g=>`<th class="n">${esc(g.k)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${rg.map(x=>`<tr><td>${esc(x.k)}</td>${rs.map(g=>{const s=x.rows.filter(r=>r.rsn==g.k);const a=s.reduce((t,r)=>t+(r.area||0),0);return `<td class="n">${s.length?`${fmt(s.length)} <span style="color:#888">(${fa(a)})</span>`:'–'}</td>`}).join('')}<td class="n"><b>${fmt(x.n)}</b></td></tr>`).join('')}<tr class="tot"><td>Total</td>${rs.map(g=>`<td class="n">${fmt(g.n)} (${fa(g.area)})</td>`).join('')}<td class="n">${fmt(rows.length)}</td></tr></tbody>`;
 }
 
+/* ---------- officers ---------- */
+const okey=n=>(n||'').toUpperCase().replace(/[^A-Z]/g,'');
+function officerStats(rows,minN){
+  minN=minN||5;const m=new Map();
+  for(const r of rows){if(r.occ!='Yes')continue;const k=okey(r.name);if(!k)continue;let o=m.get(k);if(!o){o={k,names:new Map(),des:new Map(),rngs:new Set(),beats:new Set(),n:0,area:0,same:0,resp:[],rows:[]};m.set(k,o)}
+    o.names.set(r.name,(o.names.get(r.name)||0)+1);if(r.des)o.des.set(r.des,(o.des.get(r.des)||0)+1);o.rngs.add(r.rng);o.beats.add(r.beat);o.n++;o.area+=r.area||0;o.rows.push(r);
+    if(r.fd&&r.vd){const d=(new Date(r.vd)-new Date(r.fd))/864e5;if(d>=0&&d<=30){o.resp.push(d);if(d==0)o.same++}}}
+  const best=mp=>[...mp.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
+  let L=[...m.values()].map(o=>({name:best(o.names),des:best(o.des)||'–',rng:[...o.rngs].join(', '),beats:o.beats.size,n:o.n,area:o.area,avgA:o.area/o.n,sameP:o.resp.length?o.same/o.resp.length*100:0,avgR:o.resp.length?o.resp.reduce((a,b)=>a+b,0)/o.resp.length:null,rows:o.rows})).filter(o=>o.n>=minN);
+  const pr=(arr,v,lowBetter)=>{if(arr.length<2)return 1;const below=arr.filter(x=>lowBetter?x>v:x<v).length,eq=arr.filter(x=>x==v).length-1;return (below+eq/2)/(arr.length-1)};
+  const A=L.map(o=>o.avgA),S=L.map(o=>o.sameP),N=L.map(o=>o.n);
+  L.forEach(o=>o.score=Math.round(100*(.4*pr(S,o.sameP)+.4*pr(A,o.avgA,true)+.2*pr(N,o.n))));
+  return L.sort((a,b)=>b.score-a.score||a.avgA-b.avgA||b.n-a.n)}
+let offL=[];
+function renderOfficers(rows){
+  offL=officerStats(rows,+$('oMin').value);const q=$('oq').value.trim().toLowerCase();
+  const L=q?offL.filter(o=>(o.name+' '+o.rng+' '+o.des+' '+o.rows.map(r=>r.beat).join(' ')).toLowerCase().includes(q)):offL;
+  const b=offL[0],fast=[...offL].sort((a,c)=>c.sameP-a.sameP||c.n-a.n)[0],small=[...offL].sort((a,c)=>a.avgA-c.avgA||c.n-a.n)[0],most=[...offL].sort((a,c)=>c.n-a.n)[0];
+  $('oLede').innerHTML=b?`<strong>${esc(b.name)}</strong> (${esc(b.des)}, ${esc(b.rng)}) is the most efficient officer for these filters: ${fmt(b.n)} fires attended, ${b.sameP.toFixed(0)}% on the same day, and an average of ${fa(b.avgA)} Ha burnt per fire.`:'Not enough fires per officer for these filters. Lower the minimum fires.';
+  const card=(l,o,v)=>`<div class="kpi"><b class="txt">${o?esc(o.name):'–'}</b><span>${l}${o?` · ${v(o)}`:''}</span></div>`;
+  $('oKpis').innerHTML=card('Most efficient overall',b,o=>`score ${o.score}`)+card('Fastest response',fast,o=>`${o.sameP.toFixed(0)}% same day`)+card('Least area burnt per fire',small,o=>`${fa(o.avgA)} Ha avg`)+card('Most fires handled',most,o=>`${fmt(o.n)} fires`)+`<div class="kpi"><b>${fmt(offL.length)}</b><span>Officers ranked (≥ ${$('oMin').value} fires)</span></div>`;
+  $('oSub').textContent=`${fmt(L.length)} officers · fires that occurred only`;
+  const t15=offL.slice(0,15);
+  chart('cOff',{type:'bar',data:{labels:t15.map(o=>o.name),datasets:[{label:'Score',data:t15.map(o=>o.score),backgroundColor:t15.map((o,i)=>i<3?'#e8590c':'#123524')}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>{const o=t15[c.dataIndex];return `${o.des}, ${o.rng}\nFires: ${o.n} · Same day: ${o.sameP.toFixed(0)}% · Avg area: ${fa(o.avgA)} Ha`}}}},scales:{x:{min:0,max:100},y:{grid:{display:false}}}}});
+  chart('cOffSc',{type:'bubble',data:{datasets:[{label:'Officers',data:offL.map(o=>({x:+(o.avgR??0).toFixed(2),y:+o.avgA.toFixed(2),r:Math.max(3,Math.min(18,Math.sqrt(o.n)*1.6)),o})),backgroundColor:offL.map(o=>o.score>=75?'#2f7d4fcc':o.score>=40?'#f08c00aa':'#c92a2aaa')}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const o=c.raw.o;return `${o.name} (${o.des}) – score ${o.score}, ${o.n} fires, ${(o.avgR??0).toFixed(1)} days, ${fa(o.avgA)} Ha/fire`}}}},scales:{x:{title:{display:true,text:'Average days from fire to visit'},beginAtZero:true},y:{title:{display:true,text:'Average area burnt per fire (Ha)'},beginAtZero:true}}}});
+  $('tOff').innerHTML=`<thead><tr><th class="n">Rank</th><th>Officer</th><th>Designation</th><th>Range</th><th class="n">Beats</th><th class="n">Fires</th><th class="n">Same-day visit</th><th class="n">Avg days to visit</th><th class="n">Avg area / fire (Ha)</th><th class="n">Total area (Ha)</th><th class="n">Score</th></tr></thead><tbody>${L.map(o=>`<tr><td class="n">${offL.indexOf(o)+1}</td><td><b>${esc(o.name)}</b></td><td>${esc(o.des)}</td><td>${esc(o.rng)}</td><td class="n">${o.beats}</td><td class="n">${fmt(o.n)}</td><td class="n">${o.sameP.toFixed(0)}%</td><td class="n">${o.avgR==null?'–':o.avgR.toFixed(1)}</td><td class="n">${fa(o.avgA)}</td><td class="n">${fa(o.area)}</td><td class="n"><span class="pill" style="background:${o.score>=75?'#2f7d4f':o.score>=40?'#f08c00':'#c92a2a'}">${o.score}</span></td></tr>`).join('')||'<tr><td colspan="11">No officers match.</td></tr>'}</tbody>`;
+}
+$('oq').addEventListener('input',()=>renderOfficers(filtered()));$('oMin').addEventListener('change',()=>renderOfficers(filtered()));
+$('bOx').onclick=()=>download('ATR_officer_efficiency.xls',toXls('Officer efficiency – '+filterText(),[['Rank','Officer','Designation','Range','Beats','Fires','Same-day visit %','Avg days to visit','Avg area per fire (Ha)','Total area (Ha)','Score'],...offL.map((o,i)=>[i+1,o.name,o.des,o.rng,o.beats,o.n,o.sameP.toFixed(0),o.avgR==null?'':o.avgR.toFixed(1),o.avgA.toFixed(2),o.area.toFixed(2),o.score])]),'application/vnd.ms-excel');
+
 /* ---------- reports ---------- */
 const REPORTS={
   range:{t:'Range-wise abstract of fire incidents',f:rows=>abstract(rows,['div','rng'],['Division','Range'])},
@@ -1235,7 +1282,7 @@ setInterval(()=>{if(!document.hidden)syncSheet(false)},SYNC_MIN*60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSheet(false)});
 
 /* ---------- routing & render ---------- */
-const VIEWS=['dashboard','map','records','reasons','reports'];
+const VIEWS=['dashboard','map','records','reasons','officers','reports'];
 function cur(){const h=location.hash.slice(1);return VIEWS.includes(h)?h:'dashboard'}
 let keepView=false;
 function render(bg){keepView=!!bg;
@@ -1247,6 +1294,7 @@ function render(bg){keepView=!!bg;
   if(v=='map'){initMap();setTimeout(()=>{map&&map.invalidateSize();renderMap(rows)},50)}
   if(v=='records')renderRecords(rows);
   if(v=='reasons')renderReasons(rows);
+  if(v=='officers')renderOfficers(rows);
   if(v=='reports')renderReport(rows);
 }
 window.addEventListener('hashchange',()=>render());
