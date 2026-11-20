@@ -702,9 +702,9 @@ nav.tabs a.on{background:var(--ash);color:var(--forest)}
 .filters .fact{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute);flex-wrap:wrap}.filters .fact .btn{white-space:nowrap}
 main{padding:20px max(3vw,16px) 40px;max-width:1500px;margin:0 auto}
 .view{display:none}.view.on{display:block}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.kpi b{display:block;font:700 clamp(18px,1.6vw,23px)/1.2 Archivo,Inter,sans-serif;color:var(--forest);overflow-wrap:anywhere;margin-bottom:2px}
+.kpi b{display:block;font:700 clamp(18px,1.6vw,23px)/1.2 Archivo,Inter,sans-serif;color:var(--forest);overflow-wrap:break-word;margin-bottom:2px}
 .kpi span{font-size:13px;color:var(--mute)}
 .kpi b.txt{font-size:clamp(15px,1.3vw,17px);line-height:1.25;white-space:normal;overflow-wrap:anywhere;margin:6px 0 4px}
 .kpi.hot{background:var(--ember);border-color:var(--ember);color:#fff}.kpi.hot b,.kpi.hot span{color:#fff}
@@ -1054,7 +1054,7 @@ function renderDash(rows){
   const topR=rs.find(g=>g.k!='Others'&&g.k!='Not recorded')||rs[0];
   $('lede').innerHTML=rows.length?`<strong>${fmt(fire.length)} fires</strong> burnt <strong>${fa(area)} Ha</strong> across ${beats} beats (${esc(filterText())}). ${byM[0]?`<strong>${MONTHL[byM[0].k-1]}</strong> is the peak month with ${fmt(byM[0].n)} incidents`:''}${topR?`, and the most common identified cause is <strong>${esc(topR.k)}</strong> (${Math.round(topR.n/rows.length*100)}%).`:'.'}`:'No records match these filters.';
   const avg=fire.length?area/fire.length:0;
-  const K=[['Fire incidents reported',fmt(rows.length)],['Fires occurred',fmt(fire.length),1],['Not occurred / false alerts',fmt(rows.filter(r=>r.occ=='No').length)],['Area burnt (Ha)',fa(area)],['Avg area per fire (Ha)',fa(avg)],['Beats affected',fmt(beats)],['Ranges affected',fmt(new Set(fire.map(r=>r.rng)).size)],['Most affected beat',esc(top(fire,'beat')),0,1],['Most efficient officer',(()=>{const o=officerStats(rows)[0];return o?esc(o.name):'–'})(),0,1]];
+  const K=[['Fire incidents reported',fmt(rows.length)],['Fires occurred',fmt(fire.length),1],['Not occurred / false alerts',fmt(rows.filter(r=>r.occ=='No').length)],['Area burnt (Ha)',fmt(Math.round(area))],['Avg area per fire (Ha)',fa(avg)],['Beats affected',fmt(beats)],['Ranges affected',fmt(new Set(fire.map(r=>r.rng)).size)],['Most affected beat',esc(top(fire,'beat')),0,1],['Most efficient officer',(()=>{const o=officerStats(rows)[0];return o?esc(o.name):'–'})(),0,1]];
   $('kpis').innerHTML=K.map(([l,v,h,tx])=>`<div class="kpi${h?' hot':''}"><b class="${tx?'txt':''}" title="${v}">${v}</b><span>${l}</span></div>`).join('');
   const years=uniq(rows,'y').sort();const ms=[1,2,3,4,5,6,7,8,9,10,11,12].filter(m=>rows.some(r=>r.m==m));
   chart('cMonth',{type:'bar',data:{labels:ms.map(m=>MONTHS[m-1]),datasets:years.map((y,i)=>({label:y,data:ms.map(m=>rows.filter(r=>r.y==y&&r.m==m).length),backgroundColor:YCOL[i%YCOL.length]}))},options:{plugins:{tooltip:{mode:'index'}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}});
