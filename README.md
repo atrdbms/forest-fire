@@ -13,4 +13,4 @@ Open `index.html` in a browser, or view it on GitHub Pages: https://atrdbms.gith
 - Reports (range, section, beat, month, reason, daily register, officer-wise) with print / PDF / Excel / CSV
 
 ## Data
-Data comes from the FFMIS Google Sheet (tab `FFMS-details`). The page ships with a snapshot; use **Refresh from Google Sheet** (sheet must be viewable by anyone with the link) or **Import CSV** to load newer data.
+Data comes from the FFMIS Google Sheet (tab `FFMS-details`). The site syncs with the sheet automatically when opened and every 5 minutes (the sheet must be shared as "Anyone with the link can view"). If the sheet cannot be reached, the saved copy bundled in the page is shown.

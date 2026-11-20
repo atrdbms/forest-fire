@@ -678,7 +678,8 @@ a{color:var(--ember)}
 header.top{background:var(--forest);color:#fff;padding:18px max(3vw,16px) 0;position:relative;overflow:hidden}
 header.top svg.ridge{position:absolute;right:0;bottom:0;width:min(640px,70%);height:100%;opacity:.5;pointer-events:none}
 .brand{display:flex;gap:14px;align-items:center;position:relative;flex-wrap:wrap}
-.brand .logo{width:54px;height:54px;flex:none}
+.brand .logo{width:64px;height:64px;flex:none;border-radius:50%;background:#fff;object-fit:contain;border:2px solid #ffffff55}.brand .logo.atr{border-radius:12px;border-color:#e0b43a}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#cfe0d4}.sync i{width:9px;height:9px;border-radius:50%;background:#adb5bd;display:inline-block}.sync.live i{background:#51cf66;box-shadow:0 0 0 3px #51cf6633}.sync.busy i{background:#fcc419}.sync.off i{background:#ff8787}
 .brand h1{font-size:clamp(20px,2.6vw,30px);font-weight:800}
 .brand p{margin:2px 0 0;color:#cfe0d4;font-size:14px}
 .brand .src{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -698,7 +699,7 @@ nav.tabs a.on{background:var(--ash);color:var(--forest)}
 .filters label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);font-weight:600;gap:3px}
 .filters select{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 8px;background:#fff;color:var(--ink);font-size:14px}
 .filters select.set{border-color:var(--ember);background:#fff4ec}
-.filters .fact{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute);white-space:nowrap}
+.filters .fact{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute);flex-wrap:wrap}.filters .fact .btn{white-space:nowrap}
 main{padding:20px max(3vw,16px) 40px;max-width:1500px;margin:0 auto}
 .view{display:none}.view.on{display:block}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:16px}
@@ -782,19 +783,17 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
   <svg class="ridge" viewBox="0 0 640 120" preserveAspectRatio="none" aria-hidden="true">
     <path d="M0 120 L40 70 L70 92 L120 40 L160 80 L210 30 L260 78 L300 52 L350 90 L400 35 L450 75 L500 45 L560 85 L600 55 L640 70 L640 120Z" fill="#0b2418"/>
     <g fill="#0b2418"><path d="M90 120l14-40 14 40z"/><path d="M180 120l12-34 12 34z"/><path d="M330 120l16-46 16 46z"/><path d="M470 120l12-34 12 34z"/><path d="M560 120l14-40 14 40z"/></g>
-    <path d="M330 74c6-12 2-22-4-30 12 6 22 18 18 32 4-4 6-10 4-16 8 10 8 24-2 32-10 8-24 4-28-6-2-6 4-14 12-12z" fill="#e8590c" opacity=".9"/>
   </svg>
   <div class="brand">
-    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="31" fill="#1d4a33" stroke="#e8590c" stroke-width="2"/><path d="M32 10c4 8 14 14 12 28-1 9-6 14-12 14s-12-5-12-14c0-8 6-11 6-18 4 4 4 8 4 10 4-6 4-13 2-20z" fill="#e8590c"/><path d="M32 30c2 4 6 7 5 13-1 4-3 6-5 6s-5-2-5-6c0-3 3-5 3-8 1 2 2 3 2 4 1-3 1-6 0-9z" fill="#ffd18a"/><path d="M14 54h36" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+    <img class="logo emb" src="assets/telangana-emblem.png" alt="Government of Telangana emblem">
+<img class="logo atr" src="assets/atr-logo.png" alt="Amrabad Tiger Reserve logo">
     <div>
       <h1>Forest Fire Management System</h1>
       <p>Amrabad Tiger Reserve · Telangana Forest Department</p>
     </div>
     <div class="src">
-      <span id="asof" style="font-size:12px;color:#cfe0d4"></span>
-      <button class="btn ghost sm" id="bRefresh" title="Load the latest rows from the Google Sheet">Refresh from Google Sheet</button>
-      <button class="btn ghost sm" id="bImport" title="Import a CSV exported from the sheet">Import CSV</button>
-      <input type="file" id="fCsv" accept=".csv,text/csv" hidden>
+      <span class="sync" id="sync"><i></i><span id="asof"></span></span>
+      <button class="btn ghost sm" id="bRefresh" title="Load the latest rows from the Google Sheet now">Sync now</button>
     </div>
   </div>
   <nav class="tabs" id="tabs">
@@ -895,14 +894,8 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
 </section>
 </main>
 
-<div class="modal" id="mSheet"><div class="box">
-  <h3>Refresh from Google Sheet</h3>
-  <p class="note" style="font-size:14px">Loads the latest rows straight from the FFMIS sheet. This works when the sheet is shared as <b>Anyone with the link can view</b>. If it is private, export it as CSV (File → Download → CSV) and use <b>Import CSV</b>.</p>
-  <input id="sheetUrl">
-  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="mCancel">Cancel</button><button class="btn pri" id="mGo">Load data</button></div>
-</div></div>
 <div class="toast" id="toast"></div>
-<footer>Forest Fire Management System · Amrabad Tiger Reserve · Data source: FFMIS Google Sheet (FFMS-details)</footer>
+<footer>Forest Fire Management System · Amrabad Tiger Reserve · Data source: FFMIS Google Sheet (FFMS-details), synced automatically every 5 minutes</footer>
 
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
@@ -1000,7 +993,6 @@ function fromRows(rows){
   const g=(r,k)=>c[k]>=0?(r[c[k]]||'').replace(/\s+/g,' ').trim():'';const num=s=>{const v=parseFloat(s);return isNaN(v)?null:v};
   return rows.slice(hi+1).filter(r=>g(r,'div')||g(r,'beat')).map(r=>mk([g(r,'y'),g(r,'id'),g(r,'div'),g(r,'rng'),g(r,'sec'),g(r,'beat'),num(g(r,'lat')),num(g(r,'lon')),pdate(g(r,'fd')),pdate(g(r,'vd')),g(r,'occ'),num(g(r,'area')),g(r,'rsn'),g(r,'name'),g(r,'des')]));
 }
-function useRows(list,label){if(!list.length){toast('No data rows found in that file.');return}ALL=list;ASOF=label;buildFilterOptions(true);render();toast(`Loaded ${fmt(list.length)} records.`)}
 
 /* ---------- filters ---------- */
 const F={fYear:'y',fMonth:'m',fDiv:'div',fRange:'rng',fSec:'sec',fBeat:'beat',fOcc:'occ',fRsn:'rsn'};
@@ -1083,7 +1075,7 @@ function renderMap(rows){
   if($('tPts').checked)for(const r of pts){L.circleMarker([r.lat,r.lon],{radius:r.occ=='Yes'?5+Math.min(6,Math.sqrt(r.area||0)):4,color:'#fff',weight:1,fillColor:r.occ=='Yes'?rc(r.rsn):'#ffffff',fillOpacity:.9}).bindPopup(()=>popup(r)).addTo(ptLayer)}
   if(heatLayer){map.removeLayer(heatLayer);heatLayer=null}
   if($('tHeat').checked&&L.heatLayer)heatLayer=L.heatLayer(pts.filter(r=>r.occ=='Yes').map(r=>[r.lat,r.lon,.6]),{radius:18,blur:16,gradient:{.3:'#ffd43b',.6:'#f76707',1:'#c92a2a'}}).addTo(map);
-  if($('tFit').checked&&pts.length)map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lon])).pad(.05),{maxZoom:14});
+  if($('tFit').checked&&!keepView&&pts.length)map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lon])).pad(.05),{maxZoom:14});
   const rs=group(pts,r=>r.rsn).sort((a,b)=>b.n-a.n);
   $('legend').innerHTML=rs.map(g=>`<div><span class="sw" style="background:${rc(g.k)}"></span>${esc(g.k)} <span style="color:#888">(${fmt(g.n)})</span></div>`).join('')+`<div><span class="sw" style="background:#fff"></span>Fire not occurred (white)</div>`;
   $('mapCount').textContent=`${fmt(pts.length)} mapped of ${fmt(rows.length)} filtered records. Larger circles mean larger area burnt.`;
@@ -1221,24 +1213,34 @@ $('bRx').onclick=()=>download(`ATR_${curRep}_report.xls`,toXls(`${lastRep.title}
 $('bRc').onclick=()=>download(`ATR_${curRep}_report.csv`,'﻿'+repMatrix().map(r=>r.map(csvq).join(',')).join('\n'),'text/csv');
 
 /* ---------- data source buttons ---------- */
-const SHEET='https://docs.google.com/spreadsheets/d/1xysK5-JTRzk79tnnEoYGSjugDB-YZk6U9gplzpysUC0/edit?gid=1317553652';
-$('sheetUrl').value=LS.get('ffms-sheet')||SHEET;
-$('bRefresh').onclick=()=>$('mSheet').classList.add('on');$('mCancel').onclick=()=>$('mSheet').classList.remove('on');
-$('mGo').onclick=async()=>{const u=$('sheetUrl').value.trim();const id=(u.match(/\/d\/([\w-]+)/)||[])[1];const gid=(u.match(/gid=(\d+)/)||[])[1]||'0';if(!id){toast('That does not look like a Google Sheet link.');return}
-  LS.set('ffms-sheet',u);$('mGo').textContent='Loading…';
-  try{const r=await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`);if(!r.ok)throw new Error('HTTP '+r.status);const t=await r.text();if(/<html/i.test(t.slice(0,200)))throw new Error('sheet is not public');
-    useRows(fromRows(parseCSV(t)),'Live from Google Sheet, '+new Date().toLocaleString('en-IN'));$('mSheet').classList.remove('on')}
-  catch(e){toast('Could not load the sheet ('+e.message+'). Share it as “Anyone with the link can view”, or download it as CSV and use Import CSV.',8000)}
-  $('mGo').textContent='Load data'};
-$('bImport').onclick=()=>$('fCsv').click();
-$('fCsv').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{useRows(fromRows(parseCSV(await f.text())),'Imported '+f.name)}catch(err){toast(err.message,6000)}e.target.value=''};
+const SHEET_ID='1xysK5-JTRzk79tnnEoYGSjugDB-YZk6U9gplzpysUC0',SHEET_GID='1317553652',SYNC_MIN=5;
+const SNAPIDX=new Map();
+let lastSig='',syncing=false;
+function setSync(cls,txt){$('sync').className='sync '+cls;$('asof').textContent=txt;ASOF=txt}
+async function syncSheet(manual){
+  if(syncing)return;syncing=true;setSync('busy','Syncing with Google Sheet…');
+  try{
+    const r=await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}&_=${Date.now()}`,{cache:'no-store'});
+    if(!r.ok)throw new Error('HTTP '+r.status);const txt=await r.text();if(/<html/i.test(txt.slice(0,300)))throw new Error('not shared');
+    const list=fromRows(parseCSV(txt));if(!list.length)throw new Error('no rows');
+    for(const x of list){const s=SNAPIDX.get(x.y+'|'+x.id);if(!s)continue;for(const k of ['fd','vd','div','rng','sec','beat','rsn','name','des'])if(!x[k]||x[k]=='Not recorded')x[k]=s[k];if(x.lat==null)x.lat=s.lat;if(x.lon==null)x.lon=s.lon;if(x.areaRaw==null&&s.areaRaw!=null){x.area=s.area;x.areaRaw=s.areaRaw}if(x.fd)x.m=+x.fd.slice(5,7)}
+    const sig=list.length+'|'+list.map(x=>x.id+x.fd+x.area+x.rsn+x.occ).join('').length+'|'+list[list.length-1].id;
+    const time=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    if(sig!==lastSig){const added=list.length-ALL.length;lastSig=sig;ALL=list;buildFilterOptions();setSync('live',`Live · synced ${time}`);render(true);if(manual||lastSig&&added>0)toast(added>0?`${added} new record(s) synced from the Google Sheet.`:`Synced ${fmt(list.length)} records from the Google Sheet.`)}
+    else{setSync('live',`Live · synced ${time}`);$('count').textContent=`${fmt(filtered().length)} of ${fmt(ALL.length)} records`;if(manual)toast('Already up to date.')}
+  }catch(e){setSync('off',`Offline copy (${SNAP.asof}) · sheet not reachable`);if(manual)toast('Could not reach the Google Sheet. It must be shared as “Anyone with the link can view”. Showing the saved copy.',8000)}
+  syncing=false}
+$('bRefresh').onclick=()=>syncSheet(true);
+setInterval(()=>{if(!document.hidden)syncSheet(false)},SYNC_MIN*60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncSheet(false)});
 
 /* ---------- routing & render ---------- */
 const VIEWS=['dashboard','map','records','reasons','reports'];
 function cur(){const h=location.hash.slice(1);return VIEWS.includes(h)?h:'dashboard'}
-function render(){
+let keepView=false;
+function render(bg){keepView=!!bg;
   const rows=filtered(),v=cur();
-  $('count').textContent=`${fmt(rows.length)} of ${fmt(ALL.length)} records`;$('asof').textContent=ASOF;
+  $('count').textContent=`${fmt(rows.length)} of ${fmt(ALL.length)} records`;
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('on',s.id=='v-'+v));
   document.querySelectorAll('#tabs a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')=='#'+v));
   if(v=='dashboard')renderDash(rows);
@@ -1247,14 +1249,15 @@ function render(){
   if(v=='reasons')renderReasons(rows);
   if(v=='reports')renderReport(rows);
 }
-window.addEventListener('hashchange',render);
+window.addEventListener('hashchange',()=>render());
 window.addEventListener('beforeprint',()=>{if(cur()!='reports')renderReport(filtered())});
-loadSnap();buildFilterOptions();
+loadSnap();ALL.forEach(x=>SNAPIDX.set(x.y+'|'+x.id,x));setSync('busy','Syncing with Google Sheet…');buildFilterOptions();
 const saved=LS.get('ffms-f')||{};
 ['fYear','fMonth','fOcc','fRsn','fDiv'].forEach(id=>{if(saved[id])$(id).value=saved[id]});cascade();
 ['fRange','fSec','fBeat'].forEach(id=>{if(saved[id]){$(id).value=saved[id];cascade()}});
 Object.keys(F).forEach(i=>$(i).classList.toggle('set',!!val(i)));
 render();
+syncSheet(false);
 }
 </script>
 </body>
