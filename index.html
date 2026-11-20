@@ -830,6 +830,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
     <div class="card c6"><h3>Incidents and area burnt by year</h3><div class="ch"><canvas id="cYear"></canvas></div></div>
     <div class="card c6"><h3>Range-wise incidents <small>coloured by reason</small></h3><div class="ch"><canvas id="cRange"></canvas></div></div>
     <div class="card c12"><h3>Daily fire occurrences <small>number of incidents per fire date</small></h3><div class="ch"><canvas id="cDaily"></canvas></div></div>
+    <div class="card c12"><h3>Top 10 officers <small>by efficiency score · <a href="#officers">full ranking</a></small></h3><div class="scroll"><table class="t" id="tTop10"></table></div></div>
     <div class="card c6"><h3>Most affected beats <small>top 15 by incidents</small></h3><div class="ch tall"><canvas id="cBeat"></canvas></div></div>
     <div class="card c6"><h3>Most affected sections <small>top 15 by area burnt (Ha)</small></h3><div class="ch tall"><canvas id="cSec"></canvas></div></div>
   </div>
@@ -885,7 +886,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
   <p class="lede" id="oLede"></p>
   <div class="kpis" id="oKpis"></div>
   <div class="grid">
-    <div class="card c6"><h3>Efficiency score <small>top 15 officers, 0–100</small></h3><div class="ch tall"><canvas id="cOff"></canvas></div></div>
+    <div class="card c6"><h3>Top 10 officers <small>efficiency score, 0–100</small></h3><div class="ch tall"><canvas id="cOff"></canvas></div></div>
     <div class="card c6"><h3>Speed vs. damage <small>each dot is an officer · lower-left is better</small></h3><div class="ch tall"><canvas id="cOffSc"></canvas></div></div>
     <div class="card c12"><h3>Officer efficiency ranking <small id="oSub"></small></h3>
       <div class="tools"><input type="search" id="oq" placeholder="Search officer, range, beat…"><label class="tog" style="font-size:13px">Minimum fires <select id="oMin" style="height:36px;border:1px solid var(--line);border-radius:8px"><option>1</option><option>3</option><option selected>5</option><option>10</option><option>20</option></select></label><button class="btn" id="bOx">Download Excel</button></div>
@@ -1066,6 +1067,7 @@ function renderDash(rows){
   chart('cDaily',{type:'bar',data:{labels:gd.map(g=>g.k.split('-').reverse().join('/')),datasets:[{label:'Incidents',data:gd.map(g=>g.n),backgroundColor:'#e8590c'}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:16,autoSkip:true},grid:{display:false}},y:{beginAtZero:true}}}});
   const gb=group(rows,r=>r.beat).sort((a,b)=>b.n-a.n).slice(0,15);
   chart('cBeat',{type:'bar',data:{labels:gb.map(g=>g.k),datasets:[{label:'Incidents',data:gb.map(g=>g.n),backgroundColor:'#123524'}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>{const g=gb[c.dataIndex];return `Section: ${g.rows[0].sec}, Range: ${g.rows[0].rng}\nArea burnt: ${fa(g.area)} Ha`}}}},scales:{y:{grid:{display:false}}}}});
+  $('tTop10').innerHTML=top10Html(officerStats(rows));
   const gs=group(rows,r=>r.sec).sort((a,b)=>b.area-a.area).slice(0,15);
   chart('cSec',{type:'bar',data:{labels:gs.map(g=>g.k),datasets:[{label:'Area burnt (Ha)',data:gs.map(g=>+g.area.toFixed(2)),backgroundColor:'#f08c00'}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>`Incidents: ${gs[c.dataIndex].n} · Range: ${gs[c.dataIndex].rows[0].rng}`}}},scales:{y:{grid:{display:false}}}}});
 }
@@ -1201,7 +1203,7 @@ function renderOfficers(rows){
   const card=(l,o,v)=>`<div class="kpi"><b class="txt">${o?esc(o.name):'–'}</b><span>${l}${o?` · ${v(o)}`:''}</span></div>`;
   $('oKpis').innerHTML=card('Most efficient overall',b,o=>`score ${o.score}`)+card('Fastest response',fast,o=>`${o.sameP.toFixed(0)}% same day`)+card('Least area burnt per fire',small,o=>`${fa(o.avgA)} Ha avg`)+card('Most fires handled',most,o=>`${fmt(o.n)} fires`)+`<div class="kpi"><b>${fmt(offL.length)}</b><span>Officers ranked (≥ ${$('oMin').value} fires)</span></div>`;
   $('oSub').textContent=`${fmt(L.length)} officers · fires that occurred only`;
-  const t15=offL.slice(0,15);
+  const t15=offL.slice(0,10);
   chart('cOff',{type:'bar',data:{labels:t15.map(o=>o.name),datasets:[{label:'Score',data:t15.map(o=>o.score),backgroundColor:t15.map((o,i)=>i<3?'#e8590c':'#123524')}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>{const o=t15[c.dataIndex];return `${o.des}, ${o.rng}\nFires: ${o.n} · Same day: ${o.sameP.toFixed(0)}% · Avg area: ${fa(o.avgA)} Ha`}}}},scales:{x:{min:0,max:100},y:{grid:{display:false}}}}});
   chart('cOffSc',{type:'bubble',data:{datasets:[{label:'Officers',data:offL.map(o=>({x:+(o.avgR??0).toFixed(2),y:+o.avgA.toFixed(2),r:Math.max(3,Math.min(18,Math.sqrt(o.n)*1.6)),o})),backgroundColor:offL.map(o=>o.score>=75?'#2f7d4fcc':o.score>=40?'#f08c00aa':'#c92a2aaa')}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const o=c.raw.o;return `${o.name} (${o.des}) – score ${o.score}, ${o.n} fires, ${(o.avgR??0).toFixed(1)} days, ${fa(o.avgA)} Ha/fire`}}}},scales:{x:{title:{display:true,text:'Average days from fire to visit'},beginAtZero:true},y:{title:{display:true,text:'Average area burnt per fire (Ha)'},beginAtZero:true}}}});
   $('tOff').innerHTML=`<thead><tr><th class="n">Rank</th><th>Officer</th><th>Designation</th><th>Range</th><th class="n">Beats</th><th class="n">Fires</th><th class="n">Same-day visit</th><th class="n">Avg days to visit</th><th class="n">Avg area / fire (Ha)</th><th class="n">Total area (Ha)</th><th class="n">Score</th></tr></thead><tbody>${L.map(o=>`<tr><td class="n">${offL.indexOf(o)+1}</td><td><b>${esc(o.name)}</b></td><td>${esc(o.des)}</td><td>${esc(o.rng)}</td><td class="n">${o.beats}</td><td class="n">${fmt(o.n)}</td><td class="n">${o.sameP.toFixed(0)}%</td><td class="n">${o.avgR==null?'–':o.avgR.toFixed(1)}</td><td class="n">${fa(o.avgA)}</td><td class="n">${fa(o.area)}</td><td class="n"><span class="pill" style="background:${o.score>=75?'#2f7d4f':o.score>=40?'#f08c00':'#c92a2a'}">${o.score}</span></td></tr>`).join('')||'<tr><td colspan="11">No officers match.</td></tr>'}</tbody>`;
@@ -1209,6 +1211,7 @@ function renderOfficers(rows){
 $('oq').addEventListener('input',()=>renderOfficers(filtered()));$('oMin').addEventListener('change',()=>renderOfficers(filtered()));
 $('bOx').onclick=()=>download('ATR_officer_efficiency.xls',toXls('Officer efficiency – '+filterText(),[['Rank','Officer','Designation','Range','Beats','Fires','Same-day visit %','Avg days to visit','Avg area per fire (Ha)','Total area (Ha)','Score'],...offL.map((o,i)=>[i+1,o.name,o.des,o.rng,o.beats,o.n,o.sameP.toFixed(0),o.avgR==null?'':o.avgR.toFixed(1),o.avgA.toFixed(2),o.area.toFixed(2),o.score])]),'application/vnd.ms-excel');
 
+function top10Html(L){return `<thead><tr><th class="n">Rank</th><th>Officer</th><th>Designation</th><th>Range</th><th class="n">Fires</th><th class="n">Same-day visit</th><th class="n">Avg area / fire (Ha)</th><th class="n">Score</th></tr></thead><tbody>${L.slice(0,10).map((o,i)=>`<tr><td class="n">${i+1}</td><td><b>${esc(o.name)}</b></td><td>${esc(o.des)}</td><td>${esc(o.rng)}</td><td class="n">${fmt(o.n)}</td><td class="n">${o.sameP.toFixed(0)}%</td><td class="n">${fa(o.avgA)}</td><td class="n"><span class="pill" style="background:${o.score>=75?'#2f7d4f':o.score>=40?'#f08c00':'#c92a2a'}">${o.score}</span></td></tr>`).join('')||'<tr><td colspan="8">Not enough fires per officer for these filters.</td></tr>'}</tbody>`}
 /* ---------- reports ---------- */
 const REPORTS={
   range:{t:'Range-wise abstract of fire incidents',f:rows=>abstract(rows,['div','rng'],['Division','Range'])},
@@ -1217,7 +1220,8 @@ const REPORTS={
   month:{t:'Month-wise fire incidents by year',f:monthRep},
   reason:{t:'Reason-wise fire incidents by range',f:reasonRep},
   daily:{t:'Daily fire occurrence register',f:dailyRep},
-  officer:{t:'Officer-wise fire reports',f:offRep}};
+  officer:{t:'Officer-wise fire reports',f:offRep},
+  top10:{t:'Top 10 officers by efficiency',f:rows=>({head:['S.No','Officer','Designation','Range','Fires','Same-day visit %','Avg area / fire (Ha)','Score'],body:officerStats(rows).slice(0,10).map(o=>({c:[o.name,o.des,o.rng,o.n,+o.sameP.toFixed(0),+o.avgA.toFixed(2),o.score]})),num:true})}};
 let curRep=LS.get('ffms-rep')||'range';if(!REPORTS[curRep])curRep='range';
 $('rsel').innerHTML=Object.entries(REPORTS).map(([k,v])=>`<button class="btn" data-r="${k}">${v.t.replace(' of fire incidents','').replace(' fire incidents','')}</button>`).join('');
 $('rsel').onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;curRep=b.dataset.r;LS.set('ffms-rep',curRep);renderReport(filtered())};
