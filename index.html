@@ -846,6 +846,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
         <label class="tog"><input type="checkbox" id="tPts" checked> Fire points (filtered)</label>
         <label class="tog"><input type="checkbox" id="tHeat"> Heat map</label>
         <label class="tog"><input type="checkbox" id="tFit" checked> Zoom to filtered fires</label>
+        <div id="heatLeg" style="display:none;margin-top:8px"><div style="font-size:13px;font-weight:600">Heat map: area burnt</div><div style="height:12px;border-radius:6px;margin:4px 0;background:linear-gradient(90deg,#1c3fd6,#1c7ed6,#22b8cf,#fcc419,#f76707,#c92a2a)"></div><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--mute)"><span>Less burnt</span><span>Most burnt</span></div><p class="note" id="heatNote"></p></div>
         <div class="legend" id="legend" style="margin-top:8px"></div>
         <p class="note" id="mapCount"></p>
       </div>
@@ -1073,6 +1074,17 @@ function renderDash(rows){
 }
 
 /* ---------- map ---------- */
+let heatPts=[];
+const HSTOPS=[[0,[28,63,214]],[.3,[28,126,214]],[.5,[34,184,207]],[.65,[252,196,25]],[.82,[247,103,7]],[1,[201,42,42]]];
+function hcol(v){v=Math.max(0,Math.min(1,v));for(let i=1;i<HSTOPS.length;i++){const[a,ca]=HSTOPS[i-1],[b,cb]=HSTOPS[i];if(v<=b){const f=(v-a)/(b-a);return `rgb(${ca.map((x,j)=>Math.round(x+(cb[j]-x)*f)).join(',')})`}}return 'rgb(201,42,42)'}
+function drawHeat(){
+  if(heatLayer){map.removeLayer(heatLayer);heatLayer=null}
+  if(!$('tHeat').checked||!heatPts.length)return;
+  const z=map.getZoom(),cell=z>=13?.005:z>=12?.01:.02;const g=new Map();
+  for(const r of heatPts){const i=Math.floor(r.lat/cell),j=Math.floor(r.lon/cell),k=i+'|'+j;const c=g.get(k)||{i,j,a:0,n:0};c.a+=r.area;c.n++;g.set(k,c)}
+  const cs=[...g.values()];const v=cs.map(c=>c.a).sort((a,b)=>a-b);const cap=v[Math.floor(v.length*.95)]||1;
+  heatLayer=L.layerGroup(cs.sort((a,b)=>a.a-b.a).map(c=>{const col=hcol(Math.sqrt(c.a/cap));return L.rectangle([[c.i*cell,c.j*cell],[(c.i+1)*cell,(c.j+1)*cell]],{stroke:true,color:col,weight:1,fillColor:col,fillOpacity:.6}).bindTooltip(`${fa(c.a)} Ha burnt · ${c.n} fire${c.n>1?'s':''}`)})).addTo(map);
+  $('heatNote').textContent=`Each square is about ${(cell*111).toFixed(1)} km across. Red squares have ${fa(cap)} Ha or more burnt.`}
 let map,ptLayer,heatLayer,kmlLayers=[],mapReady=false;
 function initMap(){
   if(mapReady||!window.L)return;mapReady=true;
@@ -1081,6 +1093,7 @@ function initMap(){
   map=L.map('map',{preferCanvas:true,layers:[base['Google Hybrid (labels)']]}).setView([16.25,78.75],10);
   L.control.layers(base,null,{position:'topright'}).addTo(map);L.control.scale({imperial:false}).addTo(map);
   ptLayer=L.layerGroup().addTo(map);
+  map.on('zoomend',drawHeat);
   restoreKml();
 }
 function popup(r){return `<b style="font-size:14px">Fire ID ${esc(r.id)}</b> <span class="pill" style="background:${rc(r.rsn)}">${esc(r.rsn)}</span><table>
@@ -1093,7 +1106,8 @@ function renderMap(rows){
   const pts=rows.filter(r=>r.lat&&r.lon);ptLayer.clearLayers();
   if($('tPts').checked)for(const r of pts){L.circleMarker([r.lat,r.lon],{radius:r.occ=='Yes'?5+Math.min(6,Math.sqrt(r.area||0)):4,color:'#fff',weight:1,fillColor:r.occ=='Yes'?rc(r.rsn):'#ffffff',fillOpacity:.9}).bindPopup(()=>popup(r)).addTo(ptLayer)}
   if(heatLayer){map.removeLayer(heatLayer);heatLayer=null}
-  if($('tHeat').checked&&L.heatLayer)heatLayer=L.heatLayer(pts.filter(r=>r.occ=='Yes').map(r=>[r.lat,r.lon,.6]),{radius:18,blur:16,gradient:{.3:'#ffd43b',.6:'#f76707',1:'#c92a2a'}}).addTo(map);
+  heatPts=pts.filter(r=>r.occ=='Yes'&&r.area>0);drawHeat();
+  $('heatLeg').style.display=$('tHeat').checked?'block':'none';
   if($('tFit').checked&&!keepView&&pts.length)map.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lon])).pad(.05),{maxZoom:14});
   const rs=group(pts,r=>r.rsn).sort((a,b)=>b.n-a.n);
   $('legend').innerHTML=rs.map(g=>`<div><span class="sw" style="background:${rc(g.k)}"></span>${esc(g.k)} <span style="color:#888">(${fmt(g.n)})</span></div>`).join('')+`<div><span class="sw" style="background:#fff"></span>Fire not occurred (white)</div>`;
