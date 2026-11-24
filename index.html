@@ -726,6 +726,7 @@ main{padding:20px max(3vw,16px) 40px;max-width:1500px;margin:0 auto}
 .drop.over{border-color:var(--ember);background:#fff4ec}
 .drop b{color:var(--ink);display:block}
 .lyr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.atrlbl{background:none;border:0}.atrlbl span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font:600 11px/1.1 Inter,sans-serif;pointer-events:none;text-shadow:0 0 3px #000,0 0 2px #000,0 0 1px #000}.atrlbl.b span{color:#ffd43b;font-size:12px}.atrlbl.c span{color:#fff;font-weight:500}
 .lyr .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lyr input[type=color]{width:26px;height:26px;border:0;padding:0;background:none}
 .sw{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:middle;border:1px solid #0003}
@@ -855,6 +856,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
         <label class="tog"><input type="checkbox" id="tGrid" checked> Fire risk grid (2×2 km)</label>
         <label class="tog"><input type="checkbox" id="tBeat" checked> Beat boundaries <span class="sw" style="background:#ffd43b;border-radius:2px;margin-left:auto"></span></label>
         <label class="tog"><input type="checkbox" id="tCmpt"> Compartment boundaries <span class="sw" style="background:#e7f5ff;border-radius:2px;margin-left:auto"></span></label>
+        <p class="note" style="margin-top:2px">Beat names show from zoom 11 and compartment numbers from zoom 12. Zoom in to see them.</p>
         <div id="riskBox" style="margin-top:8px">
           <div class="legend" id="riskLeg"></div>
           <p class="note" id="riskNote"></p>
@@ -1192,13 +1194,27 @@ function initAtr(){
   cmptLayer=L.geoJSON(geoFC('compartments'),{pane:'atrBnd',renderer:bndR,style:()=>({color:'#e7f5ff',weight:1,dashArray:'3 3',fill:false}),onEachFeature:(f,l)=>{l.bindPopup(()=>featPopup(f));l.bindTooltip('Compartment '+(f.properties.Compartment||''),{sticky:true})}});
   ['tGrid','tBeat','tCmpt'].forEach(id=>$(id).addEventListener('change',()=>{LS.set('ffms-atr',{g:$('tGrid').checked,b:$('tBeat').checked,c:$('tCmpt').checked});showAtr()}));
   const s=LS.get('ffms-atr');if(s){$('tGrid').checked=!!s.g;$('tBeat').checked=!!s.b;$('tCmpt').checked=!!s.c}
+  beatLbl=lblPts(beatLayer,p=>p.Beat);cmptLbl=lblPts(cmptLayer,p=>p.Compartment);
+  lblLayer=L.layerGroup().addTo(map);map.on('moveend zoomend',drawLbls);
 }
+let beatLbl=[],cmptLbl=[],lblLayer;
+/* label point: area centroid of the largest outer ring, or the middle of its bounding box if the centroid falls outside */
+function lblPts(layer,txt){const out=[];layer.eachLayer(l=>{const f=l.feature,t=txt(f.properties||{});if(!t)return;
+  const polys=f.geometry.type=='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;let best=null,ba=-1;
+  for(const p of polys){const r=p[0];let a=0,cx=0,cy=0;for(let i=0,j=r.length-1;i<r.length;j=i++){const k=r[j][0]*r[i][1]-r[i][0]*r[j][1];a+=k;cx+=(r[j][0]+r[i][0])*k;cy+=(r[j][1]+r[i][1])*k}
+    if(Math.abs(a)>ba){ba=Math.abs(a);best={r,c:a?[cx/(3*a),cy/(3*a)]:r[0]}}}
+  let c=best.c;if(!pip(c,best.r)){const b=L.geoJSON({type:'Polygon',coordinates:[best.r]}).getBounds().getCenter();c=[b.lng,b.lat]}
+  out.push({ll:L.latLng(c[1],c[0]),t:String(t)})});return out}
+function drawLbls(){if(!lblLayer)return;lblLayer.clearLayers();const z=map.getZoom(),bb=map.getBounds().pad(.1);
+  const add=(arr,cls)=>arr.forEach(o=>{if(bb.contains(o.ll))L.marker(o.ll,{icon:L.divIcon({className:'atrlbl '+cls,html:`<span>${esc(o.t)}</span>`,iconSize:[0,0]}),interactive:false,keyboard:false}).addTo(lblLayer)});
+  if($('tBeat').checked&&z>=11)add(beatLbl,'b');if($('tCmpt').checked&&z>=12)add(cmptLbl,'c')}
 function showAtr(){
   if(!riskReady)return;
   [[gridLayer,'tGrid'],[beatLayer,'tBeat'],[cmptLayer,'tCmpt']].forEach(([l,id])=>{if($(id).checked){if(!map.hasLayer(l))l.addTo(map)}else if(map.hasLayer(l))map.removeLayer(l)});
   // grid sits under the fire points; beat and compartment lines are drawn above both and only their lines are clickable
   if(map.hasLayer(gridLayer))gridLayer.bringToBack();if(map.hasLayer(cmptLayer))cmptLayer.bringToBack();
   $('riskBox').style.display=$('tGrid').checked?'block':'none';
+  drawLbls();
 }
 function gridOf(lon,lat){const c=gridIdx.get(Math.floor(lon/HC)+'|'+Math.floor(lat/HC));if(!c)return -1;
   for(const i of c){const f=gridFC.features[i],b=f._bb;if(lon<b[0]||lon>b[2]||lat<b[1]||lat>b[3])continue;if(pip([lon,lat],f.geometry.coordinates[0]))return i}return -1}
