@@ -8,6 +8,7 @@ Open `index.html` in a browser, or view it on GitHub Pages: https://atrdbms.gith
 - Filters: Year, Month, Division, Range, Section, Beat, Fire occurred, Reason
 - Dashboard with charts (month, year, reason, range, daily, beats, sections)
 - Satellite map (Google Satellite / Hybrid / Terrain, Esri imagery) with fire points, heat map and KML / KMZ / GeoJSON upload
+- ATR beat and compartment boundaries built into the map, with a 2×2 km grid coloured High / Medium / Low fire risk (score from number of fires 40%, years with fire 35%, area burnt 25%), top 10 high-risk grids and a grid-wise CSV download
 - Fire occurrence table with search, sort and CSV / Excel download
 - Reason-wise analysis
 - Reports (range, section, beat, month, reason, daily register, officer-wise) with print / PDF / Excel / CSV
